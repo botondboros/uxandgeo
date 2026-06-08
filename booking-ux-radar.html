@@ -290,7 +290,7 @@
    Az API_KEY mező CSAK helyi teszthez van. SOHA ne kerüljön GitHubba!
    Ha a PROXY_URL ki van töltve, a tool ezt figyelmen kívül hagyja.
    ============================================================ */
-const PROXY_URL = "https://crux-proxy.bboroscv.workers.dev";
+const PROXY_URL = "";  // pl. "https://crux-proxy.valami.workers.dev"
 const API_KEY   = "PASTE_YOUR_CRUX_API_KEY_HERE";
 
 /* ---------- i18n ---------- */
@@ -363,11 +363,11 @@ const I = {
     geoLblR2:"2. versenytárs neve",
     geoLblCity:"Város / térség",
     geoBtn:"Gemini-elemzés indítása",
-    geoNote:"ⓘ A Gemini-kulcs a proxyban marad, nem kerül a böngészőbe. Az eredmény futásonként és modellverziónként változhat — ez pillanatkép, nem garantált rangsor. Ehhez a funkcióhoz be kell állítani a PROXY_URL-t (Gemini-kulccsal).",
+    geoNote:"ⓘ A Gemini-kulcs a proxyban marad, nem kerül a böngészőbe. Az eredmény futásonként és modellverziónként változhat — ez pillanatkép, nem garantált rangsor.",
     geoNeedProxy:"Ehhez a funkcióhoz proxy (Worker) kell, Gemini-kulccsal. Állítsd be a PROXY_URL-t a CONFIG-ban.",
     geoFields:"Add meg legalább a saját szállásod nevét és a várost.",
     geoErr:"Hiba a Gemini-lekérdezés közben. Ellenőrizd a proxyt és a Gemini-kulcsot.",
-    geoRunning:"Kérdezem a Geminit…",
+    geoRunning:"Kérdezem a Geminit… (kb. 10–20 másodperc)",
     geoSumGood:["Erős GEO-láthatóság","A Gemini gyakran ajánl téged a tipikus utazói kérdésekre — ez ma komoly előny."],
     geoSumMid:["Közepes GEO-láthatóság","A Gemini néha ajánl téged. Van tér feljebb kerülni a válaszokban."],
     geoSumLow:["Gyenge GEO-láthatóság","A Gemini ritkán vagy egyáltalán nem ajánl téged ezekre a kérdésekre — itt sokat lehet nyerni."],
@@ -377,14 +377,16 @@ const I = {
     geoQH:"Kérdésenkénti bontás",
     geoMentioned:"említve",
     geoNot:"nem említve",
-    geoPrompts:[
-      "Ajánlj szállodákat itt: {city}.",
-      "Hol érdemes megszállni {city} városában?",
-      "Melyek a legjobb szállodák {city} környékén?",
-      "Milyen jó ár-értékű szállást ajánlasz {city} központjában?",
-      "Milyen családbarát szállást ajánlasz itt: {city}?",
-      "Hová foglaljak szállást egy {city}-i hétvégére?"
-    ],
+    geoQ:{
+      base:[
+        "Ajánlj szállodákat itt: {city}.",
+        "Hol érdemes megszállni itt: {city}?",
+        "Melyek a legjobb szállodák itt: {city}?",
+        "Hová foglaljak szállást, ha {city} térségébe utazom?"
+      ],
+      type:"Milyen {type} szállást ajánlasz itt: {city}?",
+      usp:"Ajánlj {adj} szállást itt: {city}."
+    },
     geoLblType:"Szállás típusa (opcionális)",
     geoLblUSP:"Fő erősség / USP (opcionális)",
     geoVisScore:"Láthatósági pontszám",
@@ -481,11 +483,11 @@ const I = {
     geoLblR2:"Competitor 2 name",
     geoLblCity:"City / region",
     geoBtn:"Run Gemini analysis",
-    geoNote:"ⓘ The Gemini key stays in the proxy, never in the browser. Results can vary by run and model version — this is a snapshot, not a guaranteed ranking. This feature requires PROXY_URL to be set (with a Gemini key).",
+    geoNote:"ⓘ The Gemini key stays in the proxy, never in the browser. Results can vary by run and model version — this is a snapshot, not a guaranteed ranking.",
     geoNeedProxy:"This feature needs a proxy (Worker) with a Gemini key. Set PROXY_URL in the CONFIG.",
     geoFields:"Enter at least your own accommodation name and the city.",
     geoErr:"Error during the Gemini query. Check the proxy and the Gemini key.",
-    geoRunning:"Asking Gemini…",
+    geoRunning:"Asking Gemini… (about 10–20 seconds)",
     geoSumGood:["Strong GEO visibility","Gemini often recommends you for typical traveller questions — a real edge today."],
     geoSumMid:["Moderate GEO visibility","Gemini recommends you sometimes. There's room to appear more often."],
     geoSumLow:["Weak GEO visibility","Gemini rarely or never recommends you for these questions — a lot to gain here."],
@@ -495,14 +497,16 @@ const I = {
     geoQH:"Breakdown by question",
     geoMentioned:"mentioned",
     geoNot:"not mentioned",
-    geoPrompts:[
-      "Recommend hotels in {city}.",
-      "Where should I stay in {city}?",
-      "What are the best hotels in {city}?",
-      "Recommend a good-value place to stay in central {city}.",
-      "Suggest family-friendly accommodation in {city}.",
-      "Where should I book a stay for a weekend in {city}?"
-    ],
+    geoQ:{
+      base:[
+        "Recommend hotels in {city}.",
+        "Where should I stay in {city}?",
+        "What are the best hotels in {city}?",
+        "Where should I book a stay for a trip to {city}?"
+      ],
+      type:"What {type} accommodation would you recommend in {city}?",
+      usp:"Recommend a {adj} place to stay in {city}."
+    },
     geoLblType:"Accommodation type (optional)",
     geoLblUSP:"Key strength / USP (optional)",
     geoVisScore:"Visibility score",
@@ -586,7 +590,7 @@ async function run(){
   const raws=[0,1,2].map(i=>document.getElementById('u'+i).value);
   const origins=raws.map(toOrigin);
   if(!origins[0]){err.textContent=I[lang].eFields;return;}
-  if(!PROXY_URL && (!key||key==='AIzaSyDtLruvZpK_vmDKrkEAuqnFNmNHN0syidU')){err.textContent=I[lang].eKey;return;}
+  if(!PROXY_URL && (!key||key==='PASTE_YOUR_CRUX_API_KEY_HERE')){err.textContent=I[lang].eKey;return;}
   const btn=document.getElementById('go');btn.disabled=true;btn.innerHTML='<span class="spin"></span>'+I[lang].loading;
   const sites=[];
   try{
@@ -689,6 +693,16 @@ function buildAnalysisPrompt(info,responses){
   return 'You analyze an accommodation property generative-AI visibility. Property: '+info.name+'. City: '+info.city+'. Type: '+(info.type||'n/a')+'. Key strength (USP): '+(info.usp||'n/a')+'. Competitors: '+(info.rivals.join(', ')||'none given')+'.\n\nThe following Gemini answers came from typical traveller questions about the city:\n\n'+block+'\n\nReply with ONLY a single JSON object, no other text, with this schema: {"sentiment": number between 0 and 1 (how positively/prominently the property appears), "contentGaps": [up to 4 short points on topics where the property is absent], "recommendations": [up to 4 short, concrete tips to improve AI visibility], "competitorInsight": "one short sentence on what competitors are highlighted for that you are not"}';
 }
 let GEO=null;
+function buildGeoQueries(info,T){
+  const q=T.geoQ;
+  const out=q.base.map(s=>s.split('{city}').join(info.city));
+  if(info.type) out.push(q.type.split('{type}').join(info.type).split('{city}').join(info.city));
+  if(info.usp){
+    info.usp.split(/[,;/]+/).map(s=>s.trim()).filter(Boolean).slice(0,4)
+      .forEach(adj=>out.push(q.usp.split('{adj}').join(adj).split('{city}').join(info.city)));
+  }
+  return out;
+}
 async function runGeo(){
   const T=I[lang];const err=document.getElementById('gerr');err.textContent='';
   if(!PROXY_URL){err.textContent=T.geoNeedProxy;return;}
@@ -698,7 +712,7 @@ async function runGeo(){
   const rivals=[document.getElementById('g1').value.trim(),document.getElementById('g2').value.trim()].filter(Boolean);
   const info={name,city,type:document.getElementById('gtype').value.trim(),usp:document.getElementById('gusp').value.trim(),rivals};
   const props=[{role:'you',name}].concat(rivals.map(n=>({role:'rival',name:n})));
-  const prompts=T.geoPrompts.map(p=>p.split('{city}').join(city));
+  const prompts=buildGeoQueries(info,T);
   const btn=document.getElementById('ggo');btn.disabled=true;btn.innerHTML='<span class="spin"></span>'+T.geoRunning;
   let raw,ai=null;
   try{
