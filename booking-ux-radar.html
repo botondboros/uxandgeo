@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weboldal láthatósági gyorselemzés – szállásoknak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf9f6;
+    --panel:#ffffff;
+    --panel-2:#f3f1ec;
+    --line:#e6e2da;
+    --ink:#1c1a16;
+    --ink-soft:#56514a;
+    --ink-faint:#8d877c;
+    --accent:#a8762a;
+    --accent-soft:#c2954a;
+    --good:#2c8a66;
+    --good-bg:#e7f2ec;
+    --ni:#b9801f;
+    --ni-bg:#fbf1da;
+    --poor:#c0492e;
+    --poor-bg:#fae9e3;
+    --shadow:0 1px 2px rgba(0,0,0,.04), 0 10px 30px -22px rgba(0,0,0,.25);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:44px 26px 90px}
+
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:24px}
+  .brand{flex:1;min-width:0}
+  .brand h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(28px,4.6vw,42px);line-height:1.04;letter-spacing:-.01em}
+  .brand p{color:var(--ink-soft);font-size:15px;max-width:82ch;margin-top:13px}
+  .lang{display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .lang button{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--ink-faint);background:none;border:none;padding:7px 14px;border-radius:999px;cursor:pointer;transition:.2s}
+  .lang button.on{background:var(--accent);color:#fff}
+
+  .tabs{display:flex;gap:26px;border-bottom:1px solid var(--line);margin-bottom:34px}
+  .tabs button{background:none;border:none;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;font-weight:600;color:var(--ink-faint);padding:0 0 13px;cursor:pointer;position:relative;transition:.18s}
+  .tabs button.on{color:var(--ink)}
+  .tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent)}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px;box-shadow:var(--shadow)}
+  .panel h2{font-family:'Fraunces',serif;font-weight:500;font-size:20px;margin-bottom:3px}
+  .panel .sub{color:var(--ink-faint);font-size:13.5px;margin-bottom:20px}
+  .fields{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+  @media(max-width:760px){.fields{grid-template-columns:1fr}}
+  .field label{display:block;font-size:12px;font-weight:600;margin-bottom:7px;color:var(--ink-soft)}
+  .field.you label::before{content:"\25CF";color:var(--accent);margin-right:6px;font-size:9px;vertical-align:2px}
+  .field.rival label::before{content:"\25CB";color:var(--ink-faint);margin-right:6px;font-size:9px;vertical-align:2px}
+  input[type=text]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 13px;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:13px;transition:.2s}
+  input::placeholder{color:#b3ada2}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(168,118,42,.13);background:#fff}
+  .actions{margin-top:22px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .go{font-weight:600;font-size:15px;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:13px 26px;cursor:pointer;transition:.18s}
+  .go:hover{background:#94661f}
+  .go:disabled{opacity:.55;cursor:wait}
+  .err{color:var(--poor);font-size:13.5px;font-weight:500}
+  .note{margin-top:16px;font-size:12.5px;color:var(--ink-faint);line-height:1.55;background:var(--panel-2);border-radius:10px;padding:11px 13px}
+
+  #results{margin-top:36px;display:none}
+  .ff-toggle{display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px;margin:0 auto 26px;width:max-content}
+  .ff-toggle button{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;color:var(--ink-faint);background:none;border:none;padding:9px 20px;border-radius:999px;cursor:pointer;transition:.2s}
+  .ff-toggle button.on{background:var(--panel-2);color:var(--ink)}
+
+  .headline{display:flex;gap:14px;align-items:flex-start;margin-bottom:20px}
+  .headline .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:6px}
+  .headline.good .dot{background:var(--good)} .headline.ni .dot{background:var(--ni)} .headline.poor .dot{background:var(--poor)}
+  .headline h3{font-family:'Fraunces',serif;font-weight:500;font-size:21px;line-height:1.2;margin-bottom:3px}
+  .headline p{color:var(--ink-soft);font-size:14.5px}
+
+  .board{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:28px;box-shadow:var(--shadow);overflow:hidden}
+  .board-row{display:grid;grid-template-columns:1fr 96px 96px;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .board-row:last-child{border-bottom:none}
+  .board-row.head{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+  .board-row.head .col{justify-self:center}
+  .board-name{font-weight:600;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:8px;word-break:break-all}
+  .board-name .tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px;flex-shrink:0}
+  .sc{justify-self:center;min-width:50px;text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;padding:5px 0;border-radius:8px}
+  .sc.good{background:var(--good-bg);color:var(--good)} .sc.ni{background:var(--ni-bg);color:var(--ni)} .sc.poor{background:var(--poor-bg);color:var(--poor)} .sc.none{background:var(--panel-2);color:var(--ink-faint)}
+
+  .charts{margin:0 0 30px;display:grid;gap:16px}
+  .chart{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px 16px;box-shadow:var(--shadow)}
+  .chart-title{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:64px}
+  .track{position:relative;height:13px;border-radius:7px;display:flex;overflow:visible}
+  .zone{height:100%}
+  .zone.g{background:#bfe2d2;border-radius:7px 0 0 7px} .zone.n{background:#f3dca6} .zone.p{background:#f0c3b6;border-radius:0 7px 7px 0}
+  .mark{position:absolute;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;white-space:nowrap;pointer-events:none}
+  .mark .lbl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:5px;margin-bottom:2px}
+  .mark .stick{width:2px;flex:1 1 auto}
+  .mark.you .lbl{background:var(--accent);color:#fff} .mark.you .stick{background:var(--accent)}
+  .mark.rival .lbl{background:#fff;color:var(--ink-soft);border:1px solid var(--line)} .mark.rival .stick{background:var(--ink-faint)}
+  .mark.lvl0{top:-64px;height:64px} .mark.lvl1{top:-46px;height:46px} .mark.lvl2{top:-28px;height:28px}
+  .scale{display:flex;justify-content:space-between;margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-faint)}
+  .scale .th{color:var(--ink-soft)}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:860px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);opacity:0;transform:translateY(12px);animation:rise .5s cubic-bezier(.2,.7,.3,1) forwards}
+  .card.you{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),var(--shadow)}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .card-top{padding:18px 20px 16px;border-bottom:1px solid var(--line)}
+  .badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:4px 9px;border-radius:6px;font-weight:600;display:inline-block;margin-bottom:11px}
+  .badge.you{background:var(--accent);color:#fff} .badge.rival{background:var(--panel-2);color:var(--ink-faint)}
+  .host{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);word-break:break-all;display:block;margin-bottom:14px}
+  .verdict{display:flex;gap:12px;align-items:flex-start}
+  .vdot{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:grid;place-items:center;font-size:17px;font-weight:700}
+  .vdot.good{background:var(--good-bg);color:var(--good)} .vdot.ni{background:var(--ni-bg);color:var(--ni)} .vdot.poor{background:var(--poor-bg);color:var(--poor)} .vdot.none{background:var(--panel-2);color:var(--ink-faint)}
+  .vtext{font-size:14.5px;font-weight:500;line-height:1.4}
+  .card-body{padding:6px 20px 16px}
+  .prio{margin:0 0 4px;padding:9px 12px;background:var(--ni-bg);border-radius:9px;font-size:12.5px;color:#8a5f12;line-height:1.4}
+  .prio b{font-weight:700;color:var(--ni)}
+  .area{padding:14px 0;border-bottom:1px solid var(--line)}
+  .area:last-child{border-bottom:none}
+  .area-head{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+  .area-head .d{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .area-head .d.good{background:var(--good)} .area-head .d.ni{background:var(--ni)} .area-head .d.poor{background:var(--poor)}
+  .area-name{font-size:12.5px;font-weight:600;color:var(--ink)}
+  .area-val{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-faint);white-space:nowrap}
+  .area-desc{font-size:13px;color:var(--ink-soft);line-height:1.5}
+  .pct{font-size:12px;color:var(--ink-faint);margin-top:4px;padding-left:18px}
+  .area-comp{font-size:12px;color:var(--poor);margin-top:5px;padding-left:18px;line-height:1.4}
+  .nodata{padding:28px 20px;text-align:center;color:var(--ink-faint);font-size:13.5px;line-height:1.5}
+
+  .psi-btn{display:block;margin:14px 20px 4px;padding:12px 14px;background:var(--ink);color:#fff;border-radius:10px;font-size:12.5px;font-weight:600;text-decoration:none;text-align:center;transition:.16s}
+  .psi-btn:hover{background:#000}
+  .psi{display:block;padding:12px 20px;border-top:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none;transition:.15s}
+  .psi:hover{background:var(--panel-2)}
+
+  .advice{margin:8px 20px 16px;padding:14px 16px;background:var(--panel-2);border-radius:11px}
+  .advice-h{font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--ink);margin-bottom:9px}
+  .advice ul{margin:0;padding-left:18px}
+  .advice li{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:8px}
+  .advice li:last-child{margin-bottom:0}
+  .advice.ok{background:var(--good-bg)}
+  .advice.ok p{font-size:12.5px;color:#1f6b4f;line-height:1.5}
+
+  details.tech{border-top:1px solid var(--line);background:var(--panel-2)}
+  details.tech summary{padding:13px 20px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);list-style:none;display:flex;justify-content:space-between;align-items:center}
+  details.tech summary::-webkit-details-marker{display:none}
+  details.tech summary::after{content:"+";font-size:15px}
+  details.tech[open] summary::after{content:"\2013"}
+  .metric{padding:12px 20px;border-top:1px solid var(--line)}
+  .metric-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+  .metric-name{font-size:12px;color:var(--ink-soft)} .metric-name b{color:var(--ink);font-weight:600}
+  .metric-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+  .metric-val.good{color:var(--good)} .metric-val.ni{color:var(--ni)} .metric-val.poor{color:var(--poor)}
+  .hbar{display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--bg)}
+  .hbar i{display:block;height:100%} .hbar i.g{background:var(--good)} .hbar i.n{background:var(--ni)} .hbar i.p{background:var(--poor)}
+  .hleg{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-faint);margin-top:5px}
+
+  #tab-method{display:none}
+  .method{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px 32px;box-shadow:var(--shadow);max-width:760px}
+  .method h2{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin-bottom:18px}
+  .method h3{font-size:14px;font-weight:700;margin:22px 0 6px;color:var(--ink)}
+  .method p{font-size:14px;color:var(--ink-soft);line-height:1.65;margin-bottom:6px}
+
+  footer{margin-top:46px;text-align:center;color:var(--ink-faint);font-size:12px}
+  footer a{color:var(--accent);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+  .shot-wrap{width:100%;aspect-ratio:16/10;background:var(--panel-2);overflow:hidden;border-bottom:1px solid var(--line)}
+  .shot{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+
+  .seo-sec{padding:15px 20px;border-top:1px solid var(--line)}
+  .seo-h{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:11px}
+  .seo-load{font-size:12.5px;color:var(--ink-faint)}
+  .seo-chips{display:flex;gap:8px;margin-bottom:12px}
+  .seo-chip{flex:1;text-align:center;border:1px solid var(--line);border-radius:10px;padding:9px 4px}
+  .seo-chip .v{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:17px}
+  .seo-chip .l{font-size:9.5px;color:var(--ink-faint);margin-top:3px;line-height:1.2}
+  .seo-chip.good .v{color:var(--good)} .seo-chip.ni .v{color:var(--ni)} .seo-chip.poor .v{color:var(--poor)} .seo-chip.none .v{color:var(--ink-faint)}
+  .seo-issues b{display:block;font-size:12px;font-weight:700;margin-bottom:7px}
+  .seo-issues ul{padding-left:18px;margin:0}
+  .seo-issues li{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:6px}
+
+  #tab-geo{display:none}
+  .geo-summary{margin:30px 0 20px;display:flex;gap:14px;align-items:flex-start}
+  .geo-summary h3{font-family:'Fraunces',serif;font-weight:500;font-size:21px;line-height:1.2;margin-bottom:3px}
+  .geo-summary p{color:var(--ink-soft);font-size:14.5px}
+  .gboard{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:22px}
+  .grow{display:grid;grid-template-columns:1.6fr 64px 70px 56px;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .grow:last-child{border-bottom:none}
+  .grow.head{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+  .gname{font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  .gname .tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px}
+  .gbar{height:9px;background:var(--panel-2);border-radius:5px;overflow:hidden}
+  .gbar i{display:block;height:100%;background:var(--accent)}
+  .gsc{justify-self:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px}
+  .gsub{font-size:11px;color:var(--ink-faint);margin-top:4px}
+  details.gq{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;box-shadow:var(--shadow)}
+  details.gq summary{padding:13px 16px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-soft);list-style:none}
+  details.gq summary::-webkit-details-marker{display:none}
+  .gq-body{padding:0 16px 14px;font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+  .gq-q{font-weight:600;color:var(--ink);margin:10px 0 4px}
+  .gq-hit{color:var(--good);font-weight:600}
+  .gq-miss{color:var(--ink-faint)}
+  .spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1 data-i="title"></h1>
+      <p data-i="lede"></p>
+    </div>
+    <div class="lang">
+      <button id="en" onclick="setLang('en')">EN</button>
+      <button id="hu" class="on" onclick="setLang('hu')">HU</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button id="tab-b-analysis" class="on" onclick="setTab('analysis')" data-i="tabAnalysis"></button>
+    <button id="tab-b-geo" onclick="setTab('geo')" data-i="tabGeo"></button>
+    <button id="tab-b-method" onclick="setTab('method')" data-i="tabMethod"></button>
+  </div>
+
+  <div id="tab-analysis">
+    <div class="panel">
+      <h2 data-i="panelTitle"></h2>
+      <div class="sub" data-i="panelSub"></div>
+      <div class="fields">
+        <div class="field you"><label data-i="lblYou"></label><input type="text" id="u0" placeholder="szallodam.hu"></div>
+        <div class="field rival"><label data-i="lblR1"></label><input type="text" id="u1" placeholder="versenytars1.hu"></div>
+        <div class="field rival"><label data-i="lblR2"></label><input type="text" id="u2" placeholder="versenytars2.hu"></div>
+      </div>
+      <div class="actions">
+        <button class="go" id="go" onclick="run()"><span data-i="btn"></span></button>
+        <span class="err" id="err"></span>
+      </div>
+      <div class="note" data-i="trafficNote"></div>
+    </div>
+
+    <div id="results">
+      <div class="ff-toggle">
+        <button id="ffPHONE" class="on" onclick="setFF('PHONE')" data-i="ffMobile"></button>
+        <button id="ffDESKTOP" onclick="setFF('DESKTOP')" data-i="ffDesktop"></button>
+      </div>
+      <div class="headline" id="headline"></div>
+      <div class="board" id="board"></div>
+      <div class="charts" id="charts"></div>
+      <div class="cards" id="cards"></div>
+    </div>
+  </div>
+
+  <div id="tab-method">
+    <div class="method" id="method"></div>
+  </div>
+
+  <div id="tab-geo">
+    <div class="panel">
+      <h2 data-i="geoTitle"></h2>
+      <div class="sub" data-i="geoSub"></div>
+      <div class="fields">
+        <div class="field you"><label data-i="geoLblHotel"></label><input type="text" id="g0" placeholder="Casati Budapest Hotel"></div>
+        <div class="field rival"><label data-i="geoLblR1"></label><input type="text" id="g1" placeholder="1. versenytárs neve"></div>
+        <div class="field rival"><label data-i="geoLblR2"></label><input type="text" id="g2" placeholder="2. versenytárs neve"></div>
+      </div>
+      <div class="fields" style="margin-top:15px">
+        <div class="field"><label data-i="geoLblCity"></label><input type="text" id="gcity" placeholder="Budapest"></div>
+        <div class="field"><label data-i="geoLblType"></label><input type="text" id="gtype" placeholder="pl. 3 csillagos butikhotel"></div>
+        <div class="field"><label data-i="geoLblUSP"></label><input type="text" id="gusp" placeholder="pl. spa, családbarát, belváros"></div>
+      </div>
+      <div class="actions">
+        <button class="go" id="ggo" onclick="runGeo()"><span data-i="geoBtn"></span></button>
+        <span class="err" id="gerr"></span>
+      </div>
+      <div class="note" data-i="geoNote"></div>
+    </div>
+    <div id="geo-results"></div>
+  </div>
+
+  <footer><p data-i="foot"></p></footer>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+   Éles (GitHub Pages) használathoz állítsd be a PROXY_URL-t a saját
+   Cloudflare Worker címére. Ez NEM titok — nyugodtan bekerülhet a
+   GitHubba. A Google API-kulcs a Workerben, titkos env-változóban él,
+   soha nem kerül a böngészőbe és nem kerül a repóba.
+   ------------------------------------------------------------
+   Az API_KEY mező CSAK helyi teszthez van. SOHA ne kerüljön GitHubba!
+   Ha a PROXY_URL ki van töltve, a tool ezt figyelmen kívül hagyja.
+   ============================================================ */
+const PROXY_URL = "https://crux-proxy.bboroscv.workers.dev"
+const API_KEY   = "PASTE_YOUR_CRUX_API_KEY_HERE";
+
+/* ---------- i18n ---------- */
+const I = {
+  hu:{
+    title:"Weboldal láthatósági gyorselemzés – szállásoknak",
+    lede:"Két dolgot mérünk egy helyen: mennyire gyors és használható a weboldalad a valódi látogatóknak, és mennyire ajánl téged a Gemini, amikor az utazók szállást keresnek — mindkettőt a versenytársaidhoz mérve. Semmit nem kell telepítened egyik oldalra sem.",
+    tabAnalysis:"Használhatóság",
+    tabMethod:"Metodológia",
+    panelTitle:"Add meg a három weboldalt",
+    panelSub:"A sajátodat és két fő versenytársadét. Elég a domain — pl. szallodam.hu",
+    lblYou:"A te oldalad",
+    lblR1:"1. versenytárs",
+    lblR2:"2. versenytárs",
+    btn:"Elemzés indítása",
+    ffMobile:"Mobil",
+    ffDesktop:"Asztali",
+    trafficNote:"ⓘ A statisztikák csak akkor jelennek meg, ha az oldalnak elég valódi Chrome-látogatója van. A Google nem közöl pontos küszöböt, de tapasztalati alapon kb. néhány ezer havi látogató alatt általában nincs adat — a kisebb független szállodák gyakran ez alá esnek. Ilyenkor a tool automatikusan megpróbálja a www-s és www nélküli változatot is.",
+    eFields:"Adj meg legalább a saját oldaladhoz egy URL-t.",
+    eKey:"Nincs beállítva sem proxy-URL, sem API-kulcs a fájlban (lásd a CONFIG részt a kód tetején).",
+    eKeyBad:"Az API-kulcs érvénytelen vagy nincs engedélyezve a Chrome UX Report API. Ellenőrizd a Cloud Console-ban.",
+    eNet:"Hálózati hiba a lekérdezés közben. Próbáld újra.",
+    loading:"Mérés…",
+    noData:"Ehhez a domainhez nincs elég valódi Chrome-forgalom a méréshez. Próbáld a fő domaint www-vel vagy anélkül, a kezdőlapot, vagy az átirányítás utáni végleges címet — a kisebb független szállodák gyakran a mérési küszöb alatt vannak.",
+    badgeYou:"A te oldalad",
+    badgeRival:"Versenytárs",
+    boardSite:"Oldal",
+    techT:"Technikai részletek (CrUX p75)",
+    areaSpeed:"Betöltési sebesség",
+    areaResp:"Reagálás kattintásra",
+    areaStab:"Vizuális stabilitás",
+    legGood:"jó",legNi:"fejlesztendő",legPoor:"rossz",
+    scGood:"jó:",scPoor:"rossz:",
+    mLCP:"Legnagyobb elem megjelenése (LCP)",
+    mINP:"Interakció válaszideje (INP)",
+    mCLS:"Elrendezés-elmozdulás (CLS)",
+    mFCP:"Első tartalom megjelenése (FCP)",
+    vGood:"Gördülékeny, gyors foglalási élmény.",
+    vNi:"Jó alapok, néhány finomítható ponttal.",
+    vPoor:"Több ponton lassú vagy akadozó — van mit csiszolni.",
+    desc:{
+      speed:{good:"Az oldalad gyorsan betölt ({v}) — a vendég szinte azonnal látja.",ni:"Az oldalad {v} alatt tölt be — kicsivel a kényelmes 2,5 mp fölött, így néhány vendég vár egy keveset.",poor:"Az oldalad {v} alatt tölt be — ez érzékelhetően lassú, a vendégek egy része addig üres oldalt lát."},
+      resp:{good:"Az oldalad azonnal reagál, amikor a vendég koppint vagy kattint ({v}).",ni:"Az oldalad kis késéssel reagál a vendég koppintására ({v}).",poor:"Az oldalad lassan reagál a vendég koppintására ({v}) — a felület lomhának hat."},
+      stab:{good:"Az elrendezés stabil betöltés közben — a gombok és árak nem ugranak el a vendég ujja elől ({v}).",ni:"Az elrendezés kissé mozog betöltéskor — a vendég néha máshová koppint, mint szeretné ({v}).",poor:"Az elrendezés ugrál betöltéskor — a gombok és árak elmozdulnak, a vendég könnyen rossz helyre koppint ({v})."}
+    },
+    pct:{speed:"A vendégek {p}%-a 2,5 mp-en belül látja az oldalt.",resp:"A vendégek {p}%-a 200 ms-en belül kap választ.",stab:"A vendégek {p}%-ánál stabil marad az elrendezés."},
+    compWorse:{speed:"Egy versenytársad gyorsabban tölti be az oldalt.",resp:"Egy versenytársad gyorsabban reagál az interakciókra.",stab:"Egy versenytársad oldala stabilabb betöltés közben."},
+    prioLabel:"Kezdd itt:",
+    psiBtn:"További információ webfejlesztőknek →",
+    psiLink:"További információ webfejlesztőknek →",
+    adviceH:"Tanácsok — beszéld át a webfejlesztőddel",
+    rec:{
+      speed:"Tömörítsétek és modern formátumban (WebP/AVIF) töltsétek a nyitóképet, és töltsétek előre; legyen gyorsítótár/CDN. A lassúság fő oka általában a túl nagy fotók és a lassú szerver.",
+      resp:"A beágyazott szkriptek (foglalómotor, élő chat, követőkódok) terhelik a böngészőt — töltsétek be őket késleltetve vagy csak ahol kell, és nézzétek át a foglalómotor beágyazását.",
+      stab:"Adjatok fix méretet a képeknek, bannereknek és beágyazásoknak; a sütibanner és a felugró ablakok ne tolják el a tartalmat."
+    },
+    okNote:"Tartsd ezt a szintet: a foglalási élményed gyors és stabil. Havonta érdemes újranézni, mert egy új bővítmény, követőkód vagy nagy kép gyorsan ronthat rajta.",
+    seoH:"Keresőoptimalizálás (PageSpeed / Lighthouse)",
+    seoLoading:"SEO-elemzés betöltése…",
+    seoSEO:"SEO",
+    seoAcc:"Akadály­mentesség",
+    seoBP:"Jó gyakorlatok",
+    seoIssuesH:"Konkrét SEO-teendők ezen az oldalon:",
+    seoNoIssues:"Nem találtunk jelentős SEO-hibát ezen az oldalon.",
+    tabGeo:"AI-említések (GEO elemzés)",
+    geoTitle:"Mennyire ajánl téged a Gemini?",
+    geoSub:"Beírjuk helyetted a tipikus utazói kérdéseket a Geminibe (Google-kereséssel alátámasztva), és megnézzük, hányszor kerülsz be az ajánlásokba — te és a versenytársaid.",
+    geoLblHotel:"A te szállásod neve",
+    geoLblR1:"1. versenytárs neve",
+    geoLblR2:"2. versenytárs neve",
+    geoLblCity:"Város / térség",
+    geoBtn:"Gemini-elemzés indítása",
+    geoNote:"ⓘ A Gemini-kulcs a proxyban marad, nem kerül a böngészőbe. Az eredmény futásonként és modellverziónként változhat — ez pillanatkép, nem garantált rangsor. Ehhez a funkcióhoz be kell állítani a PROXY_URL-t (Gemini-kulccsal).",
+    geoNeedProxy:"Ehhez a funkcióhoz proxy (Worker) kell, Gemini-kulccsal. Állítsd be a PROXY_URL-t a CONFIG-ban.",
+    geoFields:"Add meg legalább a saját szállásod nevét és a várost.",
+    geoErr:"Hiba a Gemini-lekérdezés közben. Ellenőrizd a proxyt és a Gemini-kulcsot.",
+    geoRunning:"Kérdezem a Geminit…",
+    geoSumGood:["Erős GEO-láthatóság","A Gemini gyakran ajánl téged a tipikus utazói kérdésekre — ez ma komoly előny."],
+    geoSumMid:["Közepes GEO-láthatóság","A Gemini néha ajánl téged. Van tér feljebb kerülni a válaszokban."],
+    geoSumLow:["Gyenge GEO-láthatóság","A Gemini ritkán vagy egyáltalán nem ajánl téged ezekre a kérdésekre — itt sokat lehet nyerni."],
+    geoColHotel:"Szállás",
+    geoColVis:"Megjelenés a válaszokban",
+    geoColScore:"Pont",
+    geoQH:"Kérdésenkénti bontás",
+    geoMentioned:"említve",
+    geoNot:"nem említve",
+    geoPrompts:[
+      "Ajánlj szállodákat itt: {city}.",
+      "Hol érdemes megszállni {city} városában?",
+      "Melyek a legjobb szállodák {city} környékén?",
+      "Milyen jó ár-értékű szállást ajánlasz {city} központjában?",
+      "Milyen családbarát szállást ajánlasz itt: {city}?",
+      "Hová foglaljak szállást egy {city}-i hétvégére?"
+    ],
+    geoLblType:"Szállás típusa (opcionális)",
+    geoLblUSP:"Fő erősség / USP (opcionális)",
+    geoVisScore:"Láthatósági pontszám",
+    geoSoV:"Részesedés az említésekből",
+    geoColMentions:"Említés",
+    geoColFirst:"Első helyen",
+    geoActionH:"Akcióterv (AI-elemzés)",
+    geoGapsH:"Tartalmi rések",
+    geoRecsH:"Javasolt lépések",
+    geoCompH:"Versenytárs-betekintés",
+    geoSource:"Forrás — Szabály-motor (0 API): említésszám, első helyezés, részesedés. AI (Gemini): hangulat, tartalmi rések, tanácsok.",
+    bWorse:["A versenytársaid most gyorsabbak","Mindkét versenytársadnál gördülékenyebb most a foglalási élmény. A részletekben látod, hol tudsz a leggyorsabban felzárkózni."],
+    bMixed:["Vegyes a kép","Van, amiben vezetsz, van, amiben lemaradsz. A részletekben látod, hol van tér a fejlődésre."],
+    bBetter:["Te vezetsz","Gördülékenyebb élményt adsz, mint mindkét versenytársad. A részletekben látod, mit érdemes megtartani."],
+    bSolo:["A te oldalad","Versenytárs nélkül itt a saját oldalad állapota. Adj meg versenytársakat az összehasonlításhoz."],
+    foot:"CrUX field data · <a href=\"https://github.com/botondboros\" target=\"_blank\" rel=\"noopener\">github.com/botondboros</a>",
+    method:[
+      ["Mit mérünk?","A Google Chrome UX Report (CrUX) valós, anonim Chrome-felhasználók méréseit használjuk — nem laborteszt, hanem az, ahogy a tényleges látogatók megélik az oldalt. Három dolgot nézünk: a betöltési sebességet (LCP), a kattintásra adott reagálást (INP) és a vizuális stabilitást (CLS)."],
+      ["Miért a 75. percentilis?","Az értékek a leglassabb 25% élményét is figyelembe veszik (p75), tehát nem az átlagos, hanem a tipikusan rosszabb élmény számít. Ez a tisztességes mérce: ha a vendégek negyede lassú élményt kap, az számít."],
+      ["Mobil és asztali külön","A foglalások nagy része mobilon történik, ezért a mobil és az asztali eredményt külön mutatjuk, és a pontszámot is mindkettőre megadjuk."],
+      ["Mit nem tud a mérés?","A CrUX az egész oldalra összesít, ezért megmondja, MI lassú, de nem azt, MELYIK aloldalon vagy melyik elemnél. Erre minden kártyán ott a PageSpeed Insights-link: az adott oldalra futtatva megmutatja a pontos okot (pl. melyik kép vagy szkript lassít)."],
+      ["Forgalmi küszöb és pontszám","Csak elég Chrome-forgalmú oldalakról van adat; a kisebb független szállodák gyakran a küszöb alatt vannak. A 0–100-as pontszám a három mérésből számolt becslés, ahol a jó/fejlesztendő/rossz besorolást súlyozzuk."],
+      ["AI-említések (GEO): mit mérünk?","A GEO-elemzés azt nézi, mennyire ajánl téged a Gemini, amikor utazók szállást keresnek. Tipikus utazói kérdéseket teszünk fel a Gemininek (Google-kereséssel alátámasztva), és megnézzük, hány válaszban jelensz meg te és a versenytársaid."],
+      ["Hibrid: szabály-motor + AI","Két lépésben dolgozunk. A szabály-motor (0 API, a böngészőben) számolja az említéseket, az első helyezést és a részesedést (share of voice). Az AI (Gemini) csak az értelmező részt adja: hangulat, tartalmi rések és konkrét tanácsok."],
+      ["4-szintű névegyezés","A szállás nevét négy szinten keressük a válaszokban: pontos egyezés → ékezet-független → márkaszó → erős kulcsszó. Így a kisebb név-eltéréseket is elkapjuk, túl sok téves találat nélkül."],
+      ["Láthatósági pontszám és korlátok","A 0–100 pont az említés-gyakoriságból, az első-helyezési arányból és az AI-hangulatból áll össze. Fontos: a Gemini nem determinisztikus, így az eredmény futásonként változhat — ez pillanatkép, nem garantált rangsor. Megbízhatóbb képhez több futás átlaga kellene."]
+    ]
+  },
+  en:{
+    title:"Website visibility quick check — for accommodations",
+    lede:"We measure two things in one place: how fast and usable your website is for real visitors, and how often Gemini recommends you when travellers look for places to stay — both against your competitors. Nothing to install on any of the sites.",
+    tabAnalysis:"Usability",
+    tabMethod:"Methodology",
+    panelTitle:"Enter the three websites",
+    panelSub:"Yours and your two main competitors. A domain is enough — e.g. myhotel.com",
+    lblYou:"Your site",
+    lblR1:"Competitor 1",
+    lblR2:"Competitor 2",
+    btn:"Run analysis",
+    ffMobile:"Mobile",
+    ffDesktop:"Desktop",
+    trafficNote:"ⓘ Stats only appear if the site has enough real Chrome visitors. Google doesn't publish an exact threshold, but in practice there's usually no data below a few thousand monthly visitors — smaller independent hotels often fall below it. When that happens, the tool automatically also tries the www and non-www version.",
+    eFields:"Enter at least a URL for your own site.",
+    eKey:"No proxy URL or API key set in the file (see the CONFIG block at the top of the code).",
+    eKeyBad:"The API key is invalid or the Chrome UX Report API isn't enabled. Check it in the Cloud Console.",
+    eNet:"Network error while querying. Please try again.",
+    loading:"Measuring…",
+    noData:"This domain doesn't have enough real Chrome traffic to measure. Try the main domain with or without www, the homepage, or the final (post-redirect) address — smaller independent hotels are often below the measurement threshold.",
+    badgeYou:"Your site",
+    badgeRival:"Competitor",
+    boardSite:"Site",
+    techT:"Technical detail (CrUX p75)",
+    areaSpeed:"Loading speed",
+    areaResp:"Tap responsiveness",
+    areaStab:"Visual stability",
+    legGood:"good",legNi:"needs work",legPoor:"poor",
+    scGood:"good:",scPoor:"poor:",
+    mLCP:"Largest Contentful Paint (LCP)",
+    mINP:"Interaction to Next Paint (INP)",
+    mCLS:"Cumulative Layout Shift (CLS)",
+    mFCP:"First Contentful Paint (FCP)",
+    vGood:"Smooth, fast booking experience.",
+    vNi:"Solid foundation with a few things to refine.",
+    vPoor:"Slow or laggy in several places — room to improve.",
+    desc:{
+      speed:{good:"Your site loads fast ({v}) — guests see it almost instantly.",ni:"Your site loads in {v} — just above the comfortable 2.5s, so some guests wait a moment.",poor:"Your site loads in {v} — that's noticeably slow, and some guests see a blank page until then."},
+      resp:{good:"Your site responds instantly when a guest taps or clicks ({v}).",ni:"Your site responds with a slight delay to a guest's tap ({v}).",poor:"Your site responds slowly to a guest's tap ({v}) — the interface feels sluggish."},
+      stab:{good:"The layout stays put while loading — buttons and prices don't move away from the guest's finger ({v}).",ni:"The layout shifts a little while loading — guests sometimes tap somewhere they didn't intend ({v}).",poor:"The layout jumps while loading — buttons and prices move, and guests easily tap the wrong place ({v})."}
+    },
+    pct:{speed:"{p}% of guests see the page within 2.5s.",resp:"{p}% of guests get a response within 200 ms.",stab:"{p}% of guests get a stable layout."},
+    compWorse:{speed:"A competitor loads the page faster than you.",resp:"A competitor responds to interactions faster than you.",stab:"A competitor's page is more stable while loading."},
+    prioLabel:"Start here:",
+    psiBtn:"More information for web developers →",
+    psiLink:"More information for web developers →",
+    adviceH:"Advice — discuss with your web developer",
+    rec:{
+      speed:"Compress the hero image, serve it in a modern format (WebP/AVIF) and preload it; enable caching/CDN. Slow loading is usually caused by oversized photos and a slow server.",
+      resp:"Embedded scripts (booking engine, live chat, trackers) are loading down the browser — defer them or load them only where needed, and review how the booking engine is embedded.",
+      stab:"Give images, banners and embeds fixed dimensions; make sure the cookie banner and pop-ups don't push content around."
+    },
+    okNote:"Keep it up: your booking experience is fast and stable. Worth re-checking monthly, since a new plugin, tracker or large image can degrade it quickly.",
+    seoH:"Search optimization (PageSpeed / Lighthouse)",
+    seoLoading:"Loading SEO analysis…",
+    seoSEO:"SEO",
+    seoAcc:"Accessibility",
+    seoBP:"Best practices",
+    seoIssuesH:"Concrete SEO fixes on this page:",
+    seoNoIssues:"No significant SEO issues found on this page.",
+    tabGeo:"AI mentions (GEO)",
+    geoTitle:"How often does Gemini recommend you?",
+    geoSub:"We ask typical traveller questions in Gemini for you (grounded with Google Search) and check how often you make it into the recommendations — you and your competitors.",
+    geoLblHotel:"Your accommodation name",
+    geoLblR1:"Competitor 1 name",
+    geoLblR2:"Competitor 2 name",
+    geoLblCity:"City / region",
+    geoBtn:"Run Gemini analysis",
+    geoNote:"ⓘ The Gemini key stays in the proxy, never in the browser. Results can vary by run and model version — this is a snapshot, not a guaranteed ranking. This feature requires PROXY_URL to be set (with a Gemini key).",
+    geoNeedProxy:"This feature needs a proxy (Worker) with a Gemini key. Set PROXY_URL in the CONFIG.",
+    geoFields:"Enter at least your own accommodation name and the city.",
+    geoErr:"Error during the Gemini query. Check the proxy and the Gemini key.",
+    geoRunning:"Asking Gemini…",
+    geoSumGood:["Strong GEO visibility","Gemini often recommends you for typical traveller questions — a real edge today."],
+    geoSumMid:["Moderate GEO visibility","Gemini recommends you sometimes. There's room to appear more often."],
+    geoSumLow:["Weak GEO visibility","Gemini rarely or never recommends you for these questions — a lot to gain here."],
+    geoColHotel:"Accommodation",
+    geoColVis:"Appearance in answers",
+    geoColScore:"Score",
+    geoQH:"Breakdown by question",
+    geoMentioned:"mentioned",
+    geoNot:"not mentioned",
+    geoPrompts:[
+      "Recommend hotels in {city}.",
+      "Where should I stay in {city}?",
+      "What are the best hotels in {city}?",
+      "Recommend a good-value place to stay in central {city}.",
+      "Suggest family-friendly accommodation in {city}.",
+      "Where should I book a stay for a weekend in {city}?"
+    ],
+    geoLblType:"Accommodation type (optional)",
+    geoLblUSP:"Key strength / USP (optional)",
+    geoVisScore:"Visibility score",
+    geoSoV:"Share of voice",
+    geoColMentions:"Mentions",
+    geoColFirst:"First position",
+    geoActionH:"Action plan (AI analysis)",
+    geoGapsH:"Content gaps",
+    geoRecsH:"Recommended steps",
+    geoCompH:"Competitor insight",
+    geoSource:"Source — Rules engine (0 API): mention count, first position, share of voice. AI (Gemini): sentiment, content gaps, recommendations.",
+    bWorse:["Your competitors are faster right now","Both competitors currently offer a smoother booking experience. The detail below shows where you can catch up fastest."],
+    bMixed:["A mixed picture","You lead on some things and trail on others. The detail below shows where there's room to improve."],
+    bBetter:["You're in the lead","You give a smoother experience than both competitors. The detail below shows what's worth protecting."],
+    bSolo:["Your site","No competitor entered, so here's your own site's state. Add competitors to compare."],
+    foot:"CrUX field data · <a href=\"https://github.com/botondboros\" target=\"_blank\" rel=\"noopener\">github.com/botondboros</a>",
+    method:[
+      ["What do we measure?","We use the Google Chrome UX Report (CrUX) — real, anonymous measurements from Chrome users, not a lab test, but how actual visitors experience the site. We look at three things: loading speed (LCP), tap responsiveness (INP) and visual stability (CLS)."],
+      ["Why the 75th percentile?","The values account for the slowest 25% of experiences (p75) — so the typically worse experience counts, not the average. That's the fair benchmark: if a quarter of guests get a slow experience, it matters."],
+      ["Mobile and desktop separately","Most bookings happen on mobile, so we show mobile and desktop results separately, and give a score for each."],
+      ["What it can't tell you","CrUX aggregates across the whole origin, so it tells you WHAT is slow, not WHICH page or element. For that, each card has a PageSpeed Insights link: run on the specific page, it shows the exact cause (e.g. which image or script is slow)."],
+      ["Traffic threshold and score","Data only exists for sites with enough Chrome traffic; smaller independent hotels are often below it. The 0–100 score is an estimate from the three measurements, weighting the good/needs-work/poor ratings."],
+      ["AI mentions (GEO): what we measure","The GEO analysis looks at how often Gemini recommends you when travellers search for places to stay. We ask Gemini typical traveller questions (grounded with Google Search) and check how many answers mention you and your competitors."],
+      ["Hybrid: rules engine + AI","Two steps. The rules engine (0 API, in the browser) counts mentions, first position and share of voice. The AI (Gemini) only adds the interpretive part: sentiment, content gaps and concrete recommendations."],
+      ["4-tier name matching","We look for the property name on four levels: exact → accent-insensitive → brand word → strong keyword. This catches small name variations without too many false positives."],
+      ["Visibility score and limits","The 0–100 score combines mention frequency, first-position rate and AI sentiment. Important: Gemini is non-deterministic, so results can vary by run — this is a snapshot, not a guaranteed ranking. A reliable picture would need the average of several runs."]
+    ]
+  }
+};
+
+let lang='hu', ff='PHONE', tab='analysis', DATA=null;
+
+function setLang(l){
+  lang=l;
+  document.getElementById('hu').classList.toggle('on',l==='hu');
+  document.getElementById('en').classList.toggle('on',l==='en');
+  document.documentElement.lang=l;
+  document.querySelectorAll('[data-i]').forEach(el=>{const k=el.getAttribute('data-i');if(I[l][k]!==undefined)el.innerHTML=I[l][k];});
+  renderMethod();
+  if(DATA) render();
+}
+function setFF(f){
+  ff=f;
+  document.getElementById('ffPHONE').classList.toggle('on',f==='PHONE');
+  document.getElementById('ffDESKTOP').classList.toggle('on',f==='DESKTOP');
+  if(DATA) render();
+}
+function setTab(t){
+  tab=t;
+  ['analysis','geo','method'].forEach(x=>{
+    document.getElementById('tab-b-'+x).classList.toggle('on',t===x);
+    document.getElementById('tab-'+x).style.display=t===x?'block':'none';
+  });
+}
+function renderMethod(){
+  const m=I[lang].method;let h='<h2>'+I[lang].tabMethod+'</h2>';
+  m.forEach(([t,p])=>{h+='<h3>'+t+'</h3><p>'+p+'</p>';});
+  document.getElementById('method').innerHTML=h;
+}
+
+/* ---------- CrUX ---------- */
+const METRICS=['largest_contentful_paint','interaction_to_next_paint','cumulative_layout_shift','first_contentful_paint'];
+const TH={largest_contentful_paint:[2500,4000],interaction_to_next_paint:[200,500],cumulative_layout_shift:[0.1,0.25],first_contentful_paint:[1800,3000]};
+function rate(metric,v){const t=TH[metric];if(v<=t[0])return'good';if(v<=t[1])return'ni';return'poor';}
+function toOrigin(raw){let s=raw.trim();if(!s)return null;if(!/^https?:\/\//i.test(s))s='https://'+s;try{return new URL(s).origin;}catch(e){return null;}}
+function altOrigin(origin){try{const u=new URL(origin);if(u.hostname.startsWith('www.'))u.hostname=u.hostname.slice(4);else u.hostname='www.'+u.hostname;return u.origin;}catch(e){return null;}}
+async function fetchCrux(origin,formFactor,key){
+  const body=JSON.stringify({origin,formFactor,metrics:METRICS});
+  const url = PROXY_URL ? PROXY_URL : 'https://chromeuxreport.googleapis.com/v1/records:queryRecord?key='+encodeURIComponent(key);
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body});
+  if(res.status===404)return{origin,notFound:true};
+  if(res.status===400||res.status===403){const e=new Error('key');e.kind='key';throw e;}
+  if(!res.ok){const e=new Error('net');e.kind='net';throw e;}
+  const j=await res.json();const out={origin,metrics:{}};const m=(j.record&&j.record.metrics)||{};
+  METRICS.forEach(k=>{if(m[k]){out.metrics[k]={p75:Number(m[k].percentiles.p75),histogram:m[k].histogram.map(h=>Number(h.density||0))};}});
+  return out;
+}
+async function run(){
+  const err=document.getElementById('err');err.textContent='';
+  const key=API_KEY;
+  const raws=[0,1,2].map(i=>document.getElementById('u'+i).value);
+  const origins=raws.map(toOrigin);
+  if(!origins[0]){err.textContent=I[lang].eFields;return;}
+  if(!PROXY_URL && (!key||key==='AIzaSyDtLruvZpK_vmDKrkEAuqnFNmNHN0syidU')){err.textContent=I[lang].eKey;return;}
+  const btn=document.getElementById('go');btn.disabled=true;btn.innerHTML='<span class="spin"></span>'+I[lang].loading;
+  const sites=[];
+  try{
+    for(let i=0;i<3;i++){
+      if(!origins[i]){sites.push(null);continue;}
+      const role=i===0?'you':'rival';let o=origins[i];
+      let phone=await fetchCrux(o,'PHONE',key), desktop=await fetchCrux(o,'DESKTOP',key);
+      if(phone.notFound&&desktop.notFound){const alt=altOrigin(o);if(alt){const p2=await fetchCrux(alt,'PHONE',key),d2=await fetchCrux(alt,'DESKTOP',key);if(!(p2.notFound&&d2.notFound)){phone=p2;desktop=d2;o=alt;}}}
+      sites.push({role,origin:o,PHONE:phone,DESKTOP:desktop});
+    }
+  }catch(e){btn.disabled=false;btn.innerHTML='<span>'+I[lang].btn+'</span>';err.textContent=e.kind==='key'?I[lang].eKeyBad:I[lang].eNet;return;}
+  btn.disabled=false;btn.innerHTML='<span>'+I[lang].btn+'</span>';
+  DATA=sites.filter(Boolean);
+  document.getElementById('results').style.display='block';
+  render();
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- helpers ---------- */
+function fmt(metric,v){if(metric==='cumulative_layout_shift')return v.toFixed(2);return v>=1000?(v/1000).toFixed(2)+' s':Math.round(v)+' ms';}
+function fmtFriendly(metric,v){if(metric==='cumulative_layout_shift'){const s=v.toFixed(2);return lang==='hu'?s.replace('.',','):s;}if(v>=1000){const s=(v/1000).toFixed(1);return(lang==='hu'?s.replace('.',','):s)+(lang==='hu'?' mp':' s');}return Math.round(v)+' ms';}
+function bestRivalVal(metric){let best=null;DATA.filter(s=>s.role==='rival').forEach(s=>{const d=s[ff];if(d&&!d.notFound&&d.metrics[metric]){const v=d.metrics[metric].p75;if(best===null||v<best)best=v;}});return best;}
+function ffScore(site,fff){const d=site[fff];if(!d||d.notFound||!d.metrics.largest_contentful_paint)return null;const w={good:100,ni:60,poor:25};let s=0,n=0;['largest_contentful_paint','interaction_to_next_paint','cumulative_layout_shift'].forEach(k=>{if(d.metrics[k]){s+=w[rate(k,d.metrics[k].p75)];n++;}});return n?Math.round(s/n):null;}
+function scoreBand(s){return s>=85?'good':s>=60?'ni':'poor';}
+function overallRating(site){const d=site[ff];if(!d||d.notFound||!d.metrics.largest_contentful_paint)return'none';let worst='good';['largest_contentful_paint','interaction_to_next_paint','cumulative_layout_shift'].forEach(k=>{if(d.metrics[k]){const r=rate(k,d.metrics[k].p75);if(r==='poor')worst='poor';else if(r==='ni'&&worst!=='poor')worst='ni';}});return worst;}
+
+const CHART={largest_contentful_paint:{max:5000,good:2500,poor:4000},interaction_to_next_paint:{max:600,good:200,poor:500},cumulative_layout_shift:{max:0.4,good:0.1,poor:0.25}};
+function shot(origin){return '<div class="shot-wrap"><img class="shot" loading="lazy" alt="" src="https://s.wordpress.com/mshots/v1/'+encodeURIComponent(origin)+'?w=640"></div>';}
+function proxyBase(){return PROXY_URL.replace(/\/+$/,'');}
+
+/* ---------- PageSpeed (SEO / accessibility / best-practices) ---------- */
+async function fetchPsi(url){
+  try{
+    if(PROXY_URL){
+      const res=await fetch(proxyBase()+'/psi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,strategy:'mobile',categories:['seo','accessibility','best-practices']})});
+      if(!res.ok)return null;return await res.json();
+    }else if(API_KEY&&API_KEY!=='PASTE_YOUR_CRUX_API_KEY_HERE'){
+      const u='https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url='+encodeURIComponent(url)+'&strategy=mobile&category=seo&category=accessibility&category=best-practices&key='+encodeURIComponent(API_KEY);
+      const res=await fetch(u);if(!res.ok)return null;return await res.json();
+    }
+  }catch(e){}
+  return null;
+}
+function seoBand(s){return s>=90?'good':s>=50?'ni':'poor';}
+function loadPsi(){
+  const T=I[lang];
+  DATA.forEach((site,idx)=>{
+    const el=document.getElementById('seo-'+idx);if(!el)return;
+    fetchPsi(site.origin).then(j=>fillSeo(el,j,site.role==='you',T)).catch(()=>{el.innerHTML='';});
+  });
+}
+function fillSeo(el,j,isYou,T){
+  if(!j||!j.lighthouseResult||!j.lighthouseResult.categories){el.innerHTML='';return;}
+  const cat=j.lighthouseResult.categories,audits=j.lighthouseResult.audits||{};
+  const sc=c=>(cat[c]&&cat[c].score!=null)?Math.round(cat[c].score*100):null;
+  const chip=(v,label)=>{const b=v==null?'none':seoBand(v);return '<div class="seo-chip '+b+'"><div class="v">'+(v==null?'—':v)+'</div><div class="l">'+label+'</div></div>';};
+  let h='<div class="seo-h">'+T.seoH+'</div><div class="seo-chips">'+chip(sc('seo'),T.seoSEO)+chip(sc('accessibility'),T.seoAcc)+chip(sc('best-practices'),T.seoBP)+'</div>';
+  if(isYou){
+    const refs=(cat.seo&&cat.seo.auditRefs)||[];const issues=[];
+    refs.forEach(r=>{const a=audits[r.id];if(a&&a.score!=null&&a.score<1&&a.title)issues.push(a.title);});
+    if(issues.length){h+='<div class="seo-issues"><b>'+T.seoIssuesH+'</b><ul>'+issues.slice(0,5).map(t=>'<li>'+t+'</li>').join('')+'</ul></div>';}
+    else{h+='<div class="seo-issues" style="color:var(--good)">'+T.seoNoIssues+'</div>';}
+  }
+  el.innerHTML=h;
+}
+
+/* ---------- GEO (AI-mentions) — 3 fázis: felfedezés -> szabály-motor -> AI-elemzés ---------- */
+function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
+const GEO_STOP=new Set(['hotel','hotels','szallo','szalloda','szallas','panzio','apartman','apartments','apartment','resort','inn','house','haz','budapest','the','and','boutique','grand','city','center','centrum','spa']);
+function brandToks(name){return norm(name).split(' ').filter(t=>t.length>=3&&!GEO_STOP.has(t));}
+function matchTier(name,rawLower,respNorm){
+  const nm=name.toLowerCase().trim();
+  if(nm&&rawLower.indexOf(nm)>=0)return 'exact';
+  const nn=norm(name);
+  if(nn&&respNorm.indexOf(nn)>=0)return 'accent';
+  const toks=brandToks(name);
+  if(toks.length&&toks.every(t=>respNorm.indexOf(t)>=0))return 'brand';
+  const strong=toks.filter(t=>t.length>=5);
+  if(strong.some(t=>respNorm.indexOf(t)>=0))return 'strong';
+  return null;
+}
+function posOf(name,respNorm){
+  const nn=norm(name);let p=nn?respNorm.indexOf(nn):-1;
+  if(p<0){brandToks(name).filter(t=>t.length>=5).forEach(t=>{const q=respNorm.indexOf(t);if(q>=0&&(p<0||q<p))p=q;});}
+  return p<0?Infinity:p;
+}
+async function fetchGemini(prompt,opts){
+  opts=opts||{};
+  const res=await fetch(proxyBase()+'/gemini',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,ground:opts.ground,json:opts.json})});
+  if(!res.ok)throw new Error('gemini');
+  const j=await res.json();
+  const c=(j.candidates||[])[0]||{};const parts=((c.content||{}).parts)||[];
+  return parts.map(p=>p.text||'').join(' ');
+}
+function buildAnalysisPrompt(info,responses){
+  const block=responses.map((r,i)=>'['+(i+1)+'] '+r).join('\n\n');
+  if(lang==='hu'){
+    return 'Egy szallas generativ-AI lathatosagat elemzed. Szallas: '+info.name+'. Varos: '+info.city+'. Tipus: '+(info.type||'n/a')+'. Fo erosseg (USP): '+(info.usp||'n/a')+'. Versenytarsak: '+(info.rivals.join(', ')||'nincs megadva')+'.\n\nAz alabbi Gemini-valaszok tipikus utazoi kerdesekre erkeztek a varosrol:\n\n'+block+'\n\nValaszolj KIZAROLAG egyetlen JSON objektummal, mas szoveg nelkul, ezzel a semaval: {"sentiment": szam 0 es 1 kozott (mennyire pozitivan/kiemelten jelenik meg a szallas), "contentGaps": [max 4 rovid magyar pont arrol, milyen temakban nincs jelen a szallas], "recommendations": [max 4 rovid, konkret magyar tanacs a jobb AI-lathatosagert], "competitorInsight": "egy rovid magyar mondat arrol, mit emelnek ki a versenytarsaknal, amit nalad nem"}';
+  }
+  return 'You analyze an accommodation property generative-AI visibility. Property: '+info.name+'. City: '+info.city+'. Type: '+(info.type||'n/a')+'. Key strength (USP): '+(info.usp||'n/a')+'. Competitors: '+(info.rivals.join(', ')||'none given')+'.\n\nThe following Gemini answers came from typical traveller questions about the city:\n\n'+block+'\n\nReply with ONLY a single JSON object, no other text, with this schema: {"sentiment": number between 0 and 1 (how positively/prominently the property appears), "contentGaps": [up to 4 short points on topics where the property is absent], "recommendations": [up to 4 short, concrete tips to improve AI visibility], "competitorInsight": "one short sentence on what competitors are highlighted for that you are not"}';
+}
+let GEO=null;
+async function runGeo(){
+  const T=I[lang];const err=document.getElementById('gerr');err.textContent='';
+  if(!PROXY_URL){err.textContent=T.geoNeedProxy;return;}
+  const name=document.getElementById('g0').value.trim();
+  const city=document.getElementById('gcity').value.trim();
+  if(!name||!city){err.textContent=T.geoFields;return;}
+  const rivals=[document.getElementById('g1').value.trim(),document.getElementById('g2').value.trim()].filter(Boolean);
+  const info={name,city,type:document.getElementById('gtype').value.trim(),usp:document.getElementById('gusp').value.trim(),rivals};
+  const props=[{role:'you',name}].concat(rivals.map(n=>({role:'rival',name:n})));
+  const prompts=T.geoPrompts.map(p=>p.split('{city}').join(city));
+  const btn=document.getElementById('ggo');btn.disabled=true;btn.innerHTML='<span class="spin"></span>'+T.geoRunning;
+  let raw,ai=null;
+  try{
+    raw=await Promise.all(prompts.map(p=>fetchGemini(p,{ground:true})));           // PHASE 1: discovery
+    try{const t=await fetchGemini(buildAnalysisPrompt(info,raw),{ground:false,json:true});ai=JSON.parse(t.replace(/```json/gi,'').replace(/```/g,'').trim());}catch(e){ai=null;} // PHASE 3: AI analysis
+  }catch(e){btn.disabled=false;btn.innerHTML='<span>'+T.geoBtn+'</span>';err.textContent=T.geoErr;return;}
+  btn.disabled=false;btn.innerHTML='<span>'+T.geoBtn+'</span>';
+  // PHASE 2: rules engine (0 API)
+  const lowers=raw.map(r=>(r||'').toLowerCase());const norms=raw.map(r=>norm(r));const N=prompts.length;
+  props.forEach(p=>{p.count=0;p.first=0;});
+  for(let i=0;i<N;i++){
+    const row=props.map(p=>{const tier=matchTier(p.name,lowers[i],norms[i]);return {p,tier,pos:tier?posOf(p.name,norms[i]):Infinity};});
+    const minPos=Math.min.apply(null,row.filter(x=>x.tier).map(x=>x.pos).concat([Infinity]));
+    row.forEach(x=>{if(x.tier){x.p.count++;if(x.pos===minPos)x.p.first++;}});
+  }
+  const total=props.reduce((a,p)=>a+p.count,0)||1;
+  const sentiment=(ai&&typeof ai.sentiment==='number')?Math.max(0,Math.min(1,ai.sentiment)):0.5;
+  props.forEach(p=>{const mr=p.count/N,fr=p.count?p.first/p.count:0,sent=p.role==='you'?sentiment:0.5;
+    p.score=Math.round(100*(0.5*mr+0.25*fr+0.25*sent));p.sov=Math.round(p.count/total*100);p.firstRate=Math.round(fr*100);});
+  const matrix=props.map(p=>raw.map((_,i)=>matchTier(p.name,lowers[i],norms[i])));
+  GEO={props,prompts,matrix,ai,N};
+  renderGeo();
+}
+function renderGeo(){
+  const T=I[lang];const el=document.getElementById('geo-results');if(!GEO){el.innerHTML='';return;}
+  const you=GEO.props.find(p=>p.role==='you');const N=GEO.N;const ysc=you?you.score:0;
+  let sClass,sH,sP;
+  if(ysc>=60){sClass='good';[sH,sP]=T.geoSumGood;}else if(ysc>=30){sClass='ni';[sH,sP]=T.geoSumMid;}else{sClass='poor';[sH,sP]=T.geoSumLow;}
+  let html='<div class="geo-summary headline '+sClass+'"><div class="dot"></div><div><h3>'+sH+'</h3><p>'+sP+'</p>'
+    +'<p style="margin-top:8px"><b>'+T.geoVisScore+': '+ysc+'/100</b> · '+T.geoSoV+': '+(you?you.sov:0)+'%</p></div></div>';
+  html+='<div class="gboard"><div class="grow head"><span>'+T.geoColHotel+'</span><span class="gsc">'+T.geoColMentions+'</span><span class="gsc">'+T.geoColFirst+'</span><span class="gsc">'+T.geoColScore+'</span></div>';
+  GEO.props.forEach(p=>{const tag=p.role==='you'?'<span class="tag">'+T.badgeYou+'</span>':'';
+    html+='<div class="grow"><span class="gname">'+tag+p.name+'</span><span class="gsc">'+p.count+'/'+N+'</span><span class="gsc">'+p.firstRate+'%</span><span class="gsc">'+p.score+'</span></div>';});
+  html+='</div>';
+  if(GEO.ai){
+    const lst=arr=>'<ul>'+(arr||[]).slice(0,4).map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+    html+='<div class="advice" style="margin:0 0 22px;background:var(--panel);border:1px solid var(--line)"><div class="advice-h">'+T.geoActionH+'</div>';
+    if(GEO.ai.contentGaps&&GEO.ai.contentGaps.length)html+='<div class="seo-issues"><b>'+T.geoGapsH+'</b>'+lst(GEO.ai.contentGaps)+'</div>';
+    if(GEO.ai.recommendations&&GEO.ai.recommendations.length)html+='<div class="seo-issues" style="margin-top:10px"><b>'+T.geoRecsH+'</b>'+lst(GEO.ai.recommendations)+'</div>';
+    if(GEO.ai.competitorInsight)html+='<div class="gsub" style="margin-top:10px"><b>'+T.geoCompH+':</b> '+GEO.ai.competitorInsight+'</div>';
+    html+='</div>';
+  }
+  html+='<details class="gq"><summary>'+T.geoQH+'</summary><div class="gq-body">';
+  GEO.prompts.forEach((p,i)=>{html+='<div class="gq-q">'+p+'</div>';
+    html+=GEO.props.map((pr,pi)=>{const hit=GEO.matrix[pi][i];return '<span class="'+(hit?'gq-hit':'gq-miss')+'">'+pr.name+': '+(hit?T.geoMentioned:T.geoNot)+'</span>';}).join(' · ');});
+  html+='</div></details>';
+  html+='<div class="gsub" style="margin-top:14px">'+T.geoSource+'</div>';
+  el.innerHTML=html;
+}
+
+/* ---------- render ---------- */
+function render(){
+  const T=I[lang];
+  // headline
+  const you=DATA.find(s=>s.role==='you');
+  const rivals=DATA.filter(s=>s.role==='rival');
+  const cmp=s=>ffScore(s,'PHONE')!==null?ffScore(s,'PHONE'):ffScore(s,'DESKTOP');
+  const ys=you?cmp(you):null;
+  const rss=rivals.map(cmp).filter(v=>v!==null);
+  let bClass,bH,bP;
+  if(!rivals.length||rss.length===0){bClass='ni';[bH,bP]=T.bSolo;}
+  else if(ys===null){bClass='ni';[bH,bP]=T.bMixed;}
+  else{const better=rss.every(r=>ys>r),worse=rss.every(r=>ys<r);if(worse){bClass='poor';[bH,bP]=T.bWorse;}else if(better){bClass='good';[bH,bP]=T.bBetter;}else{bClass='ni';[bH,bP]=T.bMixed;}}
+  const hEl=document.getElementById('headline');hEl.className='headline '+bClass;
+  hEl.innerHTML='<div class="dot"></div><div><h3>'+bH+'</h3><p>'+bP+'</p></div>';
+
+  // scoreboard (mobile + desktop)
+  const bd=document.getElementById('board');
+  let bh='<div class="board-row head"><span>'+T.boardSite+'</span><span class="col">'+T.ffMobile+'</span><span class="col">'+T.ffDesktop+'</span></div>';
+  DATA.forEach(s=>{
+    const host=s.origin.replace(/^https?:\/\//,'');
+    const tag=s.role==='you'?'<span class="tag">'+T.badgeYou+'</span>':'';
+    const sp=ffScore(s,'PHONE'),sd=ffScore(s,'DESKTOP');
+    const cell=v=>v===null?'<span class="sc none">—</span>':'<span class="sc '+scoreBand(v)+'">'+v+'</span>';
+    bh+='<div class="board-row"><span class="board-name">'+tag+host+'</span>'+cell(sp)+cell(sd)+'</div>';
+  });
+  bd.innerHTML=bh;
+
+  buildCharts(T);
+
+  // cards
+  const cardsEl=document.getElementById('cards');cardsEl.innerHTML='';
+  DATA.forEach((site,idx)=>{
+    const isYou=site.role==='you';
+    const d=site[ff];
+    const host=site.origin.replace(/^https?:\/\//,'');
+    const card=document.createElement('div');
+    card.className='card'+(isYou?' you':'');
+    card.style.animationDelay=(idx*0.08)+'s';
+    let inner='<div class="card-top"><span class="badge '+(isYou?'you':'rival')+'">'+(isYou?T.badgeYou:T.badgeRival)+'</span><span class="host">'+host+'</span>';
+
+    if(!d||d.notFound||!d.metrics.largest_contentful_paint){
+      inner+='<div class="verdict"><div class="vdot none">–</div><div class="vtext">'+T.noData+'</div></div></div>';
+      card.innerHTML=inner;cardsEl.appendChild(card);return;
+    }
+
+    const ov=overallRating(site);
+    const ovTxt=ov==='good'?T.vGood:ov==='ni'?T.vNi:T.vPoor;
+    const ovIcon=ov==='good'?'\u2713':ov==='ni'?'!':'\u00D7';
+    inner+='<div class="verdict"><div class="vdot '+ov+'">'+ovIcon+'</div><div class="vtext">'+ovTxt+'</div></div></div>';
+
+    inner+='<div class="card-body">';
+    const areas=[
+      {key:'speed',name:T.areaSpeed,metric:'largest_contentful_paint'},
+      {key:'resp',name:T.areaResp,metric:'interaction_to_next_paint'},
+      {key:'stab',name:T.areaStab,metric:'cumulative_layout_shift'}
+    ];
+    let worst=null,wr=-1;
+    areas.forEach(a=>{if(!d.metrics[a.metric])return;const rk={good:0,ni:1,poor:2}[rate(a.metric,d.metrics[a.metric].p75)];if(rk>wr){wr=rk;worst=a;}});
+    if(isYou && worst && wr>0) inner+='<div class="prio"><b>'+T.prioLabel+'</b> '+worst.name+'</div>';
+
+    const issues=[];
+    areas.forEach(a=>{
+      if(!d.metrics[a.metric])return;
+      const v=d.metrics[a.metric].p75;const r=rate(a.metric,v);
+      const goodPct=Math.round((d.metrics[a.metric].histogram[0]||0)*100);
+      inner+='<div class="area"><div class="area-head"><span class="d '+r+'"></span><span class="area-name">'+a.name+'</span><span class="area-val">'+fmtFriendly(a.metric,v)+'</span></div>';
+      inner+='<div class="area-desc">'+T.desc[a.key][r].replace('{v}',fmtFriendly(a.metric,v))+'</div>';
+      inner+='<div class="pct">'+T.pct[a.key].replace('{p}',goodPct)+'</div>';
+      if(isYou){const rv=bestRivalVal(a.metric);if(rv!==null&&v>rv*1.05)inner+='<div class="area-comp">'+T.compWorse[a.key]+'</div>';}
+      if(isYou&&r!=='good')issues.push(a.key);
+      inner+='</div>';
+    });
+    inner+='</div>';
+
+    if(isYou){
+      inner+='<a class="psi-btn" href="https://pagespeed.web.dev/report?url='+encodeURIComponent(site.origin)+'" target="_blank" rel="noopener">'+T.psiBtn+'</a>';
+      if(issues.length){
+        inner+='<div class="advice"><div class="advice-h">'+T.adviceH+'</div><ul>';
+        issues.forEach(k=>{inner+='<li>'+T.rec[k]+'</li>';});
+        inner+='</ul></div>';
+      }else{
+        inner+='<div class="advice ok"><p>'+T.okNote+'</p></div>';
+      }
+    }else{
+      inner+='<a class="psi" href="https://pagespeed.web.dev/report?url='+encodeURIComponent(site.origin)+'" target="_blank" rel="noopener">'+T.psiLink+'</a>';
+    }
+
+    inner+='<div class="seo-sec" id="seo-'+idx+'"><div class="seo-load">'+T.seoLoading+'</div></div>';
+    inner+='<details class="tech" open><summary>'+T.techT+'</summary>';
+    [['largest_contentful_paint',T.mLCP],['interaction_to_next_paint',T.mINP],['cumulative_layout_shift',T.mCLS],['first_contentful_paint',T.mFCP]].forEach(pair=>{
+      const k=pair[0],label=pair[1];if(!d.metrics[k])return;
+      const mv=d.metrics[k],r=rate(k,mv.p75),h=mv.histogram,g=(h[0]||0)*100,n=(h[1]||0)*100,p=(h[2]||0)*100;
+      inner+='<div class="metric"><div class="metric-top"><span class="metric-name"><b>'+label+'</b></span><span class="metric-val '+r+'">'+fmt(k,mv.p75)+'</span></div>';
+      inner+='<div class="hbar"><i class="g" style="width:'+g+'%"></i><i class="n" style="width:'+n+'%"></i><i class="p" style="width:'+p+'%"></i></div>';
+      inner+='<div class="hleg"><span>'+T.legGood+' '+Math.round(g)+'%</span><span>'+T.legNi+' '+Math.round(n)+'%</span><span>'+T.legPoor+' '+Math.round(p)+'%</span></div></div>';
+    });
+    inner+='</details>';
+    card.innerHTML=inner;cardsEl.appendChild(card);
+  });
+  loadPsi();
+}
+
+function buildCharts(T){
+  const el=document.getElementById('charts');
+  const defs=[['largest_contentful_paint',T.areaSpeed],['interaction_to_next_paint',T.areaResp],['cumulative_layout_shift',T.areaStab]];
+  let any=false,html='';
+  defs.forEach(pair=>{
+    const metric=pair[0],name=pair[1],c=CHART[metric];
+    const gPct=c.good/c.max*100,nPct=(c.poor-c.good)/c.max*100,pPct=100-gPct-nPct;
+    let marks='';
+    DATA.forEach((s,i)=>{const d=s[ff];if(!d||d.notFound||!d.metrics[metric])return;any=true;const v=d.metrics[metric].p75;const left=Math.min(Math.max(v/c.max*100,1.5),98.5);const role=s.role==='you'?'you':'rival';marks+='<div class="mark '+role+' lvl'+i+'" style="left:'+left+'%"><span class="lbl">'+fmtFriendly(metric,v)+'</span><span class="stick"></span></div>';});
+    html+='<div class="chart"><div class="chart-title">'+name+'</div><div class="track"><div class="zone g" style="width:'+gPct+'%"></div><div class="zone n" style="width:'+nPct+'%"></div><div class="zone p" style="width:'+pPct+'%"></div>'+marks+'</div><div class="scale"><span>0</span><span class="th">'+T.scGood+' '+fmtFriendly(metric,c.good)+'</span><span class="th">'+T.scPoor+' '+fmtFriendly(metric,c.poor)+'+</span></div></div>';
+  });
+  el.innerHTML=any?html:'';
+}
+
+setLang('hu');
+setTab('analysis');
+</script>
+</body>
+</html>
