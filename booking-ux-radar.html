@@ -122,6 +122,7 @@
   .area-name{font-size:12.5px;font-weight:600;color:var(--ink)}
   .area-val{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-faint);white-space:nowrap}
   .area-desc{font-size:13px;color:var(--ink-soft);line-height:1.5}
+  .area-desc .vbetter{color:var(--good);font-weight:600} .area-desc .vworse{color:var(--poor);font-weight:600} .area-desc b{font-weight:600}
   .pct{font-size:12px;color:var(--ink-faint);margin-top:4px;padding-left:18px}
   .area-comp{font-size:12px;color:var(--poor);margin-top:5px;padding-left:18px;line-height:1.4}
   .nodata{padding:28px 20px;text-align:center;color:var(--ink-faint);font-size:13.5px;line-height:1.5}
@@ -328,15 +329,20 @@ const I = {
     mINP:"Interakció válaszideje (INP)",
     mCLS:"Elrendezés-elmozdulás (CLS)",
     mFCP:"Első tartalom megjelenése (FCP)",
-    vGood:"Gördülékeny, gyors foglalási élmény.",
-    vNi:"Jó alapok, néhány finomítható ponttal.",
-    vPoor:"Több ponton lassú vagy akadozó — van mit csiszolni.",
+    vGood:["Gördülékeny, gyors foglalási élmény.","Gyors és sima — a vendég élvezi a böngészést.","Kiváló élmény, az oldal pörög.","Villámgyors és stabil — nincs mit javítani.","Profi teljesítmény, a vendég azonnal halad.","Gyors betöltés, gördülékeny használat.","Remek élmény — semmi nem akasztja meg a vendéget.","Gyors, stabil, kényelmes foglalási folyamat."],
+    vNi:["Jó alapok, néhány finomítható ponttal.","Stabil alap, van még hová csiszolni.","Alapvetően rendben, pár helyen lehet javítani.","Jó irány, néhány részlet még hangolható.","Szilárd alap, apró ráncfelvarrással még jobb lehet.","Működik szépen, de van tér a finomításra.","Jó kiindulás, néhány ponton érdemes csiszolni.","Korrekt teljesítmény, pár apróság még optimalizálható."],
+    vPoor:["Több ponton lassú vagy akadozó — van mit csiszolni.","Érezhető lassulások — érdemes nekiállni a javításnak.","Akadozik néhány helyen — a vendég türelmét próbára teszi.","Lassú betöltés és döccenők — komoly tér a fejlődésre.","Több gyenge pont — a foglalási élmény szenved tőle.","Vontatott és helyenként instabil — javítás ajánlott.","Lassú élmény — a vendég könnyen elpártol.","Több gond is van — érdemes a sebességgel kezdeni."],
     desc:{
       speed:{good:"Az oldalad gyorsan betölt ({v}) — a vendég szinte azonnal látja.",ni:"Az oldalad {v} alatt tölt be — kicsivel a kényelmes 2,5 mp fölött, így néhány vendég vár egy keveset.",poor:"Az oldalad {v} alatt tölt be — ez érzékelhetően lassú, a vendégek egy része addig üres oldalt lát."},
       resp:{good:"Az oldalad azonnal reagál, amikor a vendég koppint vagy kattint ({v}).",ni:"Az oldalad kis késéssel reagál a vendég koppintására ({v}).",poor:"Az oldalad lassan reagál a vendég koppintására ({v}) — a felület lomhának hat."},
       stab:{good:"Az elrendezés stabil betöltés közben — a gombok és árak nem ugranak el a vendég ujja elől ({v}).",ni:"Az elrendezés kissé mozog betöltéskor — a vendég néha máshová koppint, mint szeretné ({v}).",poor:"Az elrendezés ugrál betöltéskor — a gombok és árak elmozdulnak, a vendég könnyen rossz helyre koppint ({v})."}
     },
     pct:{speed:"A vendégek {p}%-a 2,5 mp-en belül látja az oldalt.",resp:"A vendégek {p}%-a 200 ms-en belül kap választ.",stab:"A vendégek {p}%-ánál stabil marad az elrendezés."},
+    descR:{
+      speed:{good:"A versenytárs oldala gyorsan betölt ({v}) — a vendég szinte azonnal látja.",ni:"A versenytárs oldala {v} alatt tölt be — kicsivel a kényelmes 2,5 mp fölött, így néhány vendég vár egy keveset.",poor:"A versenytárs oldala {v} alatt tölt be — ez érzékelhetően lassú, a vendégek egy része addig üres oldalt lát."},
+      resp:{good:"A versenytárs oldala azonnal reagál, amikor a vendég koppint vagy kattint ({v}).",ni:"A versenytárs oldala kis késéssel reagál a vendég koppintására ({v}).",poor:"A versenytárs oldala lassan reagál a vendég koppintására ({v}) — a felület lomhának hat."},
+      stab:{good:"A versenytárs oldalán stabil az elrendezés betöltés közben — a gombok és árak nem ugranak el ({v}).",ni:"A versenytárs oldalán kissé mozog az elrendezés betöltéskor ({v}).",poor:"A versenytárs oldalán ugrál az elrendezés betöltéskor — a gombok és árak elmozdulnak ({v})."}
+    },
     compWorse:{speed:"Egy versenytársad gyorsabban tölti be az oldalt.",resp:"Egy versenytársad gyorsabban reagál az interakciókra.",stab:"Egy versenytársad oldala stabilabb betöltés közben."},
     prioLabel:"Kezdd itt:",
     psiBtn:"További információ webfejlesztőknek →",
@@ -448,15 +454,20 @@ const I = {
     mINP:"Interaction to Next Paint (INP)",
     mCLS:"Cumulative Layout Shift (CLS)",
     mFCP:"First Contentful Paint (FCP)",
-    vGood:"Smooth, fast booking experience.",
-    vNi:"Solid foundation with a few things to refine.",
-    vPoor:"Slow or laggy in several places — room to improve.",
+    vGood:["Smooth, fast booking experience.","Quick and seamless — guests enjoy browsing.","Excellent experience, the site flies.","Lightning-fast and stable — nothing to fix.","Polished performance, guests move right along.","Fast loading, smooth to use.","Great experience — nothing slows the guest down.","Fast, stable, comfortable booking flow."],
+    vNi:["Solid foundation with a few things to refine.","Good base, some room to polish.","Mostly fine, a few spots to improve.","Good direction, a few details to tune.","Strong base — a little polish would help.","Works well, but there's room to refine.","Good starting point, worth tightening a few areas.","Decent performance, a few small things to optimize."],
+    vPoor:["Slow or laggy in several places — room to improve.","Noticeable slowdowns — worth tackling the fixes.","Janky in spots — it tests the guest's patience.","Slow loading and jumps — real room to improve.","Several weak points — the booking experience suffers.","Sluggish and unstable in places — fixes recommended.","Slow experience — guests may drop off easily.","Several issues — start with speed."],
     desc:{
       speed:{good:"Your site loads fast ({v}) — guests see it almost instantly.",ni:"Your site loads in {v} — just above the comfortable 2.5s, so some guests wait a moment.",poor:"Your site loads in {v} — that's noticeably slow, and some guests see a blank page until then."},
       resp:{good:"Your site responds instantly when a guest taps or clicks ({v}).",ni:"Your site responds with a slight delay to a guest's tap ({v}).",poor:"Your site responds slowly to a guest's tap ({v}) — the interface feels sluggish."},
       stab:{good:"The layout stays put while loading — buttons and prices don't move away from the guest's finger ({v}).",ni:"The layout shifts a little while loading — guests sometimes tap somewhere they didn't intend ({v}).",poor:"The layout jumps while loading — buttons and prices move, and guests easily tap the wrong place ({v})."}
     },
     pct:{speed:"{p}% of guests see the page within 2.5s.",resp:"{p}% of guests get a response within 200 ms.",stab:"{p}% of guests get a stable layout."},
+    descR:{
+      speed:{good:"The competitor's site loads fast ({v}) — guests see it almost instantly.",ni:"The competitor's site loads in {v} — just above the comfortable 2.5s, so some guests wait a moment.",poor:"The competitor's site loads in {v} — that's noticeably slow, and some guests see a blank page until then."},
+      resp:{good:"The competitor's site responds instantly when a guest taps or clicks ({v}).",ni:"The competitor's site responds with a slight delay to a guest's tap ({v}).",poor:"The competitor's site responds slowly to a guest's tap ({v}) — the interface feels sluggish."},
+      stab:{good:"The competitor's layout stays stable while loading — buttons and prices don't move ({v}).",ni:"The competitor's layout shifts a little while loading ({v}).",poor:"The competitor's layout jumps while loading — buttons and prices move ({v})."}
+    },
     compWorse:{speed:"A competitor loads the page faster than you.",resp:"A competitor responds to interactions faster than you.",stab:"A competitor's page is more stable while loading."},
     prioLabel:"Start here:",
     psiBtn:"More information for web developers →",
@@ -810,7 +821,8 @@ function render(){
     }
 
     const ov=overallRating(site);
-    const ovTxt=ov==='good'?T.vGood:ov==='ni'?T.vNi:T.vPoor;
+    const ovArr=ov==='good'?T.vGood:ov==='ni'?T.vNi:T.vPoor;
+    const ovTxt=ovArr[idx % ovArr.length];
     const ovIcon=ov==='good'?'\u2713':ov==='ni'?'!':'\u00D7';
     inner+='<div class="verdict"><div class="vdot '+ov+'">'+ovIcon+'</div><div class="vtext">'+ovTxt+'</div></div></div>';
 
@@ -829,8 +841,12 @@ function render(){
       if(!d.metrics[a.metric])return;
       const v=d.metrics[a.metric].p75;const r=rate(a.metric,v);
       const goodPct=Math.round((d.metrics[a.metric].histogram[0]||0)*100);
-      inner+='<div class="area"><div class="area-head"><span class="d '+r+'"></span><span class="area-name">'+a.name+'</span><span class="area-val">'+fmtFriendly(a.metric,v)+'</span></div>';
-      inner+='<div class="area-desc">'+T.desc[a.key][r].replace('{v}',fmtFriendly(a.metric,v))+'</div>';
+      const vFmt=fmtFriendly(a.metric,v);
+      let vIns=vFmt;
+      if(isYou){const rv=bestRivalVal(a.metric);let cc='';if(rv!==null)cc=(v<=rv)?'vbetter':'vworse';vIns='<b class="'+cc+'">'+vFmt+'</b>';}
+      const descSet=isYou?T.desc:T.descR;
+      inner+='<div class="area"><div class="area-head"><span class="d '+r+'"></span><span class="area-name">'+a.name+'</span><span class="area-val">'+vFmt+'</span></div>';
+      inner+='<div class="area-desc">'+descSet[a.key][r].replace('{v}',vIns)+'</div>';
       inner+='<div class="pct">'+T.pct[a.key].replace('{p}',goodPct)+'</div>';
       if(isYou){const rv=bestRivalVal(a.metric);if(rv!==null&&v>rv*1.05)inner+='<div class="area-comp">'+T.compWorse[a.key]+'</div>';}
       if(isYou&&r!=='good')issues.push(a.key);
