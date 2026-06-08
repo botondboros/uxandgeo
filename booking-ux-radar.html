@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weboldal láthatósági gyorselemzés – szállásoknak</title>
+<title>Weboldal láthatósági és AI gyorselemzés – szállásoknak</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -266,7 +266,7 @@
       <div class="fields" style="margin-top:15px">
         <div class="field"><label data-i="geoLblCity"></label><input type="text" id="gcity" placeholder="Budapest"></div>
         <div class="field"><label data-i="geoLblType"></label><input type="text" id="gtype" placeholder="pl. 3 csillagos butikhotel"></div>
-        <div class="field"><label data-i="geoLblUSP"></label><input type="text" id="gusp" placeholder="pl. spa, családbarát, belváros"></div>
+        <div class="field"><label data-i="geoLblUSP"></label><input type="text" id="gusp" placeholder="pl. elegáns, kutyabarát, medencés"></div>
       </div>
       <div class="actions">
         <button class="go" id="ggo" onclick="runGeo()"><span data-i="geoBtn"></span></button>
@@ -297,7 +297,7 @@ const API_KEY   = "PASTE_YOUR_CRUX_API_KEY_HERE";
 /* ---------- i18n ---------- */
 const I = {
   hu:{
-    title:"Weboldal láthatósági gyorselemzés – szállásoknak",
+    title:"Weboldal láthatósági és AI gyorselemzés – szállásoknak",
     lede:"Két dolgot mérünk egy helyen: mennyire gyors és használható a weboldalad a valódi látogatóknak, és mennyire ajánl téged a Gemini, amikor az utazók szállást keresnek — mindkettőt a versenytársaidhoz mérve. Semmit nem kell telepítened egyik oldalra sem.",
     tabAnalysis:"Használhatóság",
     tabMethod:"Metodológia",
@@ -394,7 +394,7 @@ const I = {
       usp:"Ajánlj {adj} szállást itt: {city}."
     },
     geoLblType:"Szállás típusa (opcionális)",
-    geoLblUSP:"Fő erősség / USP (opcionális)",
+    geoLblUSP:"Fő erősségek / USP – melléknevek, vesszővel (opcionális)",
     geoVisScore:"Láthatósági pontszám",
     geoSoV:"Részesedés az említésekből",
     geoColMentions:"Említés",
@@ -404,6 +404,11 @@ const I = {
     geoRecsH:"Javasolt lépések",
     geoCompH:"Versenytárs-betekintés",
     geoSource:"Forrás — Szabály-motor (0 API): említésszám, első helyezés, részesedés. AI (Gemini): hangulat, tartalmi rések, tanácsok.",
+    geoTechT:"Technikai részletek",
+    geoTechModel:"Modell: Gemini 2.5 Flash, a felfedező fázisban Google-kereséssel alátámasztva (grounding).",
+    geoTechQ:"Lekérdezések: {n} kérdés futott le.",
+    geoTechScore:"Láthatósági pontszám = 50% említési arány + 25% első helyezés aránya + 25% AI-hangulat.",
+    geoTechMatch:"Egyezés: 4 szintű névillesztés (pontos, normalizált, részleges, token-alapú).",
     bWorse:["A versenytársaid most gyorsabbak","Mindkét versenytársadnál gördülékenyebb most a foglalási élmény. A részletekben látod, hol tudsz a leggyorsabban felzárkózni."],
     bMixed:["Vegyes a kép","Van, amiben vezetsz, van, amiben lemaradsz. A részletekben látod, hol van tér a fejlődésre."],
     bBetter:["Te vezetsz","Gördülékenyebb élményt adsz, mint mindkét versenytársad. A részletekben látod, mit érdemes megtartani."],
@@ -422,7 +427,7 @@ const I = {
     ]
   },
   en:{
-    title:"Website visibility quick check — for accommodations",
+    title:"Website visibility & AI quick check — for accommodations",
     lede:"We measure two things in one place: how fast and usable your website is for real visitors, and how often Gemini recommends you when travellers look for places to stay — both against your competitors. Nothing to install on any of the sites.",
     tabAnalysis:"Usability",
     tabMethod:"Methodology",
@@ -519,7 +524,7 @@ const I = {
       usp:"Recommend a {adj} place to stay in {city}."
     },
     geoLblType:"Accommodation type (optional)",
-    geoLblUSP:"Key strength / USP (optional)",
+    geoLblUSP:"Key strengths / USP – adjectives, comma-separated (optional)",
     geoVisScore:"Visibility score",
     geoSoV:"Share of voice",
     geoColMentions:"Mentions",
@@ -529,6 +534,11 @@ const I = {
     geoRecsH:"Recommended steps",
     geoCompH:"Competitor insight",
     geoSource:"Source — Rules engine (0 API): mention count, first position, share of voice. AI (Gemini): sentiment, content gaps, recommendations.",
+    geoTechT:"Technical details",
+    geoTechModel:"Model: Gemini 2.5 Flash, grounded with Google Search in the discovery phase.",
+    geoTechQ:"Queries: {n} questions were run.",
+    geoTechScore:"Visibility score = 50% mention rate + 25% first-position rate + 25% AI sentiment.",
+    geoTechMatch:"Matching: 4-tier name matching (exact, normalized, partial, token-based).",
     bWorse:["Your competitors are faster right now","Both competitors currently offer a smoother booking experience. The detail below shows where you can catch up fastest."],
     bMixed:["A mixed picture","You lead on some things and trail on others. The detail below shows where there's room to improve."],
     bBetter:["You're in the lead","You give a smoother experience than both competitors. The detail below shows what's worth protecting."],
@@ -758,18 +768,23 @@ function renderGeo(){
   GEO.props.forEach(p=>{const tag=p.role==='you'?'<span class="tag">'+T.badgeYou+'</span>':'';
     html+='<div class="grow"><span class="gname">'+tag+p.name+'</span><span class="gsc">'+p.count+'/'+N+'</span><span class="gsc">'+p.firstRate+'%</span><span class="gsc">'+p.score+'</span></div>';});
   html+='</div>';
+  // 1) Kérdésenkénti bontás — alapból nyitva
+  html+='<details class="gq" open><summary>'+T.geoQH+'</summary><div class="gq-body">';
+  GEO.prompts.forEach((p,i)=>{html+='<div class="gq-q">'+p+'</div>';
+    html+=GEO.props.map((pr,pi)=>{const hit=GEO.matrix[pi][i];return '<span class="'+(hit?'gq-hit':'gq-miss')+'">'+pr.name+': '+(hit?T.geoMentioned:T.geoNot)+'</span>';}).join(' · ');});
+  html+='</div></details>';
+  // 2) AI akcióterv
   if(GEO.ai){
     const lst=arr=>'<ul>'+(arr||[]).slice(0,4).map(x=>'<li>'+x+'</li>').join('')+'</ul>';
-    html+='<div class="advice" style="margin:0 0 22px;background:var(--panel);border:1px solid var(--line)"><div class="advice-h">'+T.geoActionH+'</div>';
+    html+='<div class="advice" style="margin:0 0 16px;background:var(--panel);border:1px solid var(--line)"><div class="advice-h">'+T.geoActionH+'</div>';
     if(GEO.ai.contentGaps&&GEO.ai.contentGaps.length)html+='<div class="seo-issues"><b>'+T.geoGapsH+'</b>'+lst(GEO.ai.contentGaps)+'</div>';
     if(GEO.ai.recommendations&&GEO.ai.recommendations.length)html+='<div class="seo-issues" style="margin-top:10px"><b>'+T.geoRecsH+'</b>'+lst(GEO.ai.recommendations)+'</div>';
     if(GEO.ai.competitorInsight)html+='<div class="gsub" style="margin-top:10px"><b>'+T.geoCompH+':</b> '+GEO.ai.competitorInsight+'</div>';
     html+='</div>';
   }
-  html+='<details class="gq"><summary>'+T.geoQH+'</summary><div class="gq-body">';
-  GEO.prompts.forEach((p,i)=>{html+='<div class="gq-q">'+p+'</div>';
-    html+=GEO.props.map((pr,pi)=>{const hit=GEO.matrix[pi][i];return '<span class="'+(hit?'gq-hit':'gq-miss')+'">'+pr.name+': '+(hit?T.geoMentioned:T.geoNot)+'</span>';}).join(' · ');});
-  html+='</div></details>';
+  // 3) Technikai részletek — külön, összecsukható szekció
+  html+='<details class="tech" style="border:1px solid var(--line);border-radius:12px;margin-bottom:10px"><summary>'+T.geoTechT+'</summary><div style="padding:4px 20px 16px;font-size:12.5px;color:var(--ink-soft);line-height:1.6">'
+    +'<div>'+T.geoTechModel+'</div><div>'+T.geoTechQ.replace('{n}',N)+'</div><div>'+T.geoTechScore+'</div><div>'+T.geoTechMatch+'</div></div></details>';
   html+='<div class="gsub" style="margin-top:14px">'+T.geoSource+'</div>';
   el.innerHTML=html;
 }
